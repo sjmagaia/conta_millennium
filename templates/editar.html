@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Editar Entrada</title>
+  <style>
+    body {
+      font-family: Mongolian Baiti, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 80px;
+      background-color: #f2f2f2;
+    }
+    h1 {
+      color: #8B0000;
+      margin-bottom: 30px;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Editar Entrada</h1>
+  <form action="" method="post">
+    <input type="text" name="descricao" value="{{ entrada.descricao }}" required>
+    <input type="number" step="0.01" name="valor" value="{{ entrada.valor }}" required>
+    <input type="date" name="data" value="{{ entrada.data }}" required>
+    <button type="submit">Salvar</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "descricao": "Aluguer de material",
+        "valor": 17500.0,
+        "data": "2025-06-10"
+    },
+    {
+        "id": 2,
+        "descricao": "Poupan\u00e7a Sal\u00e1rio",
+        "valor": 125000.0,
+        "data": "2025-06-22"
+    },
+    {
+        "id": 3,
+        "descricao": "Aluguer de Materia de Cofragem (Mestre Adelino)",
+        "valor": 43000.0,
+        "data": "2025-06-13"
+    }
+]

@@ -1,0 +1,242 @@
+app.py
+
+
+from flask import Flask, render_template, request, redirect, url_for
+import json
+import os
+from datetime import datetime
+
+app = Flask(__name__)
+DATA_FILE = 'entradas.json'
+
+def carregar_entradas():
+    if not os.path.exists(DATA_FILE) or os.stat(DATA_FILE).st_size == 0:
+        return []
+    with open(DATA_FILE, 'r') as f:
+        return json.load(f)
+
+def salvar_entradas(entradas):
+    with open(DATA_FILE, 'w') as f:
+        json.dump(entradas, f, indent=4)
+
+@app.route('/')
+def index():
+    entradas = carregar_entradas()
+    saldo = sum(e['valor'] for e in entradas)
+    return render_template('index.html', entradas=entradas[::-1], saldo=saldo)
+
+@app.route('/adicionar', methods=['POST'])
+def adicionar():
+    entradas = carregar_entradas()
+    nova_entrada = {
+        'id': datetime.now().strftime('%Y%m%d%H%M%S%f'),
+        'descricao': request.form['descricao'],
+        'valor': float(request.form['valor']),
+        'data': request.form['data']
+    }
+    entradas.append(nova_entrada)
+    salvar_entradas(entradas)
+    return redirect(url_for('index'))
+
+@app.route('/editar/<entrada_id>', methods=['POST'])
+def editar(entrada_id):
+    entradas = carregar_entradas()
+    for entrada in entradas:
+        if entrada['id'] == entrada_id:
+            entrada['descricao'] = request.form['descricao']
+            entrada['valor'] = float(request.form['valor'])
+            entrada['data'] = request.form['data']
+            salvar_entradas(entradas)
+            return redirect(url_for('index'))
+    return "Entrada não encontrada", 404
+
+@app.route('/excluir/<entrada_id>', methods=['POST'])
+def excluir(entrada_id):
+    entradas = carregar_entradas()
+    entradas = [e for e in entradas if e['id'] != entrada_id]
+    salvar_entradas(entradas)
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+---------------------------------------------------------------------
+
+index.html
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Millennium BIM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+        }
+
+        h1 {
+            margin-top: 60px;
+            font-size: 2.5em;
+            font-family: 'Mongolian Baiti', serif;
+            color: #8B0000;
+        }
+
+        form {
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 90%;
+            max-width: 800px;
+            margin-top: 20px;
+            background-color: white;
+        }
+
+        th, td {
+            border: 1px solid #999;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #eee;
+        }
+
+        .saldo {
+            margin-top: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: green;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .form-linha {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .form-linha input {
+            width: 200px;
+        }
+
+        .relatorio {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Millennium BIM</h1>
+
+    <form action="/adicionar" method="post" class="form-linha">
+        <input type="text" name="descricao" placeholder="Descrição" required>
+        <input type="number" step="0.01" name="valor" placeholder="Valor" required>
+        <input type="date" name="data" required>
+        <button type="submit">Adicionar Entrada</button>
+    </form>
+
+    <div class="saldo">Saldo Actual: {{ "%.2f"|format(saldo) }} MT</div>
+
+    <div class="relatorio">
+        <form action="/relatorio" method="get">
+            <button type="submit">Gerar Relatório CSV</button>
+        </form>
+    </div>
+
+    <table>
+        <tr>
+            <th>Descrição</th>
+            <th>Valor (MT)</th>
+            <th>Data</th>
+            <th>Ações</th>
+        </tr>
+        {% for entrada in entradas %}
+        <tr>
+            <td>
+                <form action="{{ url_for('editar', entrada_id=entrada.id) }}" method="post">
+                    <input type="text" name="descricao" value="{{ entrada.descricao }}" required>
+            </td>
+            <td>
+                    <input type="number" step="0.01" name="valor" value="{{ "%.2f"|format(entrada.valor) }}" required>
+            </td>
+            <td>
+                    <input type="date" name="data" value="{{ entrada.data }}" required>
+            </td>
+            <td class="actions">
+                    <button type="submit">Salvar</button>
+                </form>
+                <form action="{{ url_for('excluir', entrada_id=entrada.id) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir esta entrada?');">
+                    <button type="submit">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
+
+-----------------------------------------------------------
+
+editar.html
+
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Editar Entrada</title>
+  <style>
+    body {
+      font-family: Mongolian Baiti, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 80px;
+      background-color: #f2f2f2;
+    }
+    h1 {
+      color: #8B0000;
+      margin-bottom: 30px;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Editar Entrada</h1>
+  <form action="" method="post">
+    <input type="text" name="descricao" value="{{ entrada.descricao }}" required>
+    <input type="number" step="0.01" name="valor" value="{{ entrada.valor }}" required>
+    <input type="date" name="data" value="{{ entrada.data }}" required>
+    <button type="submit">Salvar</button>
+  </form>
+</body>
+</html>
+
